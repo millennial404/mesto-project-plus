@@ -4,6 +4,7 @@ import { rateLimit } from 'express-rate-limit';
 import helmet from 'helmet';
 import usersRouter from './routes/users';
 import cardRouter from './routes/cards';
+import { login, createUser } from './controllers/users';
 
 export interface CustomRequest extends Request {
   user?: {_id: string};
@@ -33,6 +34,8 @@ mongoose.set('strictQuery', false);
 mongoose.connect('mongodb://localhost:27017/mestodb');
 
 app.use('/users', usersRouter);
+app.post('/signin', login);
+app.post('/signup', createUser);
 app.use('/cards', cardRouter);
 app.use((req: Request, res: Response) => {
   res.status(404).json({ message: 'Not Found' });

@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import isEmail from 'validator/lib/isEmail';
+import bcrypt from 'bcrypt';
 
 interface IUser {
   name: string;
@@ -9,7 +10,12 @@ interface IUser {
   avatar: string;
 }
 
-const userSchema = new mongoose.Schema<IUser>({
+interface UserModel extends mongoose.Model<IUser> {
+  findUserByCredentials:
+    (email: string, password: string) => Promise<mongoose.Document<unknown, any, IUser>>;
+}
+
+const userSchema = new mongoose.Schema<IUser, UserModel>({
   name: {
     type: String,
     default: 'Жак-Ив Кусто',
@@ -38,5 +44,16 @@ const userSchema = new mongoose.Schema<IUser>({
     default: 'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
   },
 });
+userSchema.static('findUserByCredentials', async function findUserByCredentials(email: string, password: string) {
+  const user = await this.findOne({ email });
+  if (!user) {
+    return Promise.reject(new Error('Неправильные почта или пароль'));
+  }
+  const matched = await bcrypt.compare(password, user.password);
+  if (!matched) {
+    return Promise.reject(new Error('Неправильные почта или пароль'));
+  }
+  return user;
+});
 
-export default mongoose.model<IUser>('User', userSchema);
+export default mongoose.model<IUser, UserModel>('User', userSchema);

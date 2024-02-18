@@ -1,7 +1,10 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import User from '../models/user';
-import { BAD_REQUEST, NOT_FOUND, SERVER_ERROR } from './const';
+import {
+  BAD_REQUEST, NOT_FOUND, SERVER_ERROR, UNAUTHORIZED,
+} from './const';
 
 export interface CustomRequest extends Request {
   user?: { _id: string };
@@ -124,5 +127,21 @@ export const updateAvatar = async (req: CustomRequest, res: Response) => {
     }
     return res.status(SERVER_ERROR)
       .send({ message: 'Произошла ошибка' });
+  }
+};
+
+export const login = async (req: Request, res: Response) => {
+  const { email, password } = req.body;
+  try {
+    const user = await User.findUserByCredentials(email, password);
+    const token = jwt.sign(
+      { _id: user._id },
+      'some-secret-key',
+      { expiresIn: '7d' },
+    );
+    return res.send({ token });
+  } catch (err: any) {
+    return res.status(UNAUTHORIZED)
+      .send({ message: err.message });
   }
 };
