@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import bcrypt from 'bcrypt';
 import User from '../models/user';
 import { BAD_REQUEST, NOT_FOUND, SERVER_ERROR } from './const';
 
@@ -7,18 +8,22 @@ export interface CustomRequest extends Request {
 }
 
 export const createUser = async (req: Request, res: Response) => {
+  const hash = await bcrypt.hash(req.body.password, 10);
   const {
     name,
+    email,
     about,
     avatar,
   } = req.body;
   try {
-    if (!name || !about || !avatar) {
+    if (!email || !hash) {
       return res.status(BAD_REQUEST)
         .send({ message: 'Переданы некорректные данные' });
     }
     const user = await User.create({
       name,
+      email,
+      password: hash,
       about,
       avatar,
     });
