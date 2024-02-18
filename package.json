@@ -23,9 +23,12 @@
     "typescript": "^4.7.4"
   },
   "dependencies": {
+    "@types/express-rate-limit": "^6.0.0",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "express": "^4.18.1",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
     "mongoose": "^6.12.6"
   }
 }

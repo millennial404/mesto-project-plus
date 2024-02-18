@@ -48,7 +48,10 @@ export const createCard = async (req: CustomRequest, res: Response) => {
       owner: req.user?._id,
     });
     return res.send(card);
-  } catch {
+  } catch (err: any) {
+    if (err.name === 'ValidationError') {
+      return res.status(BAD_REQUEST).send({ message: 'Ошибка валидации данных' });
+    }
     return res.status(SERVER_ERROR)
       .send({ message: 'Произошла ошибка' });
   }
@@ -66,7 +69,7 @@ export const deleteCard = async (req: CustomRequest, res: Response) => {
         .send({ message: 'Нельзя удалять чужие карточки' });
     }
     const deletedCard = await Card.findByIdAndRemove(req.params.id);
-    return res.send(`Карточка "${deletedCard?.name}" удалена`);
+    return res.send({ message: `Карточка "${deletedCard?.name}" удалена` });
   } catch {
     return res.status(SERVER_ERROR)
       .send({ message: 'Произошла ошибка' });
@@ -85,7 +88,11 @@ export const likeCard = async (req: CustomRequest, res: Response) => {
         .send({ message: 'Карточка не найдена' });
     }
     return res.send(card);
-  } catch {
+  } catch (err: any) {
+    if (err.name === 'CastError') {
+      return res.status(BAD_REQUEST)
+        .send({ message: 'Переданы некорректные данные' });
+    }
     return res.status(SERVER_ERROR)
       .send({ message: 'Произошла ошибка' });
   }
@@ -103,7 +110,11 @@ export const dislikeCard = async (req: CustomRequest, res: Response) => {
         .send({ message: 'Карточка не найдена' });
     }
     return res.send(card);
-  } catch {
+  } catch (err: any) {
+    if (err.name === 'CastError') {
+      return res.status(BAD_REQUEST)
+        .send({ message: 'Переданы некорректные данные' });
+    }
     return res.status(SERVER_ERROR)
       .send({ message: 'Произошла ошибка' });
   }

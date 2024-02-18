@@ -3,7 +3,7 @@ import User from '../models/user';
 import { BAD_REQUEST, NOT_FOUND, SERVER_ERROR } from './const';
 
 export interface CustomRequest extends Request {
-  user?: {_id: string};
+  user?: { _id: string };
 }
 
 export const createUser = async (req: Request, res: Response) => {
@@ -23,7 +23,11 @@ export const createUser = async (req: Request, res: Response) => {
       avatar,
     });
     return res.send(user);
-  } catch {
+  } catch (err: any) {
+    if (err.name === 'ValidationError') {
+      return res.status(BAD_REQUEST)
+        .send({ message: 'Переданы некорректные данные' });
+    }
     return res.status(SERVER_ERROR)
       .send({ message: 'Произошла ошибка' });
   }
@@ -42,17 +46,17 @@ export const getUsers = async (req: Request, res: Response) => {
 export const getUser = async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
-    if (!id) {
-      return res.status(BAD_REQUEST)
-        .send({ message: 'Переданы некорректные данные' });
-    }
     const user = await User.findById(id);
     if (!user) {
       return res.status(NOT_FOUND)
         .send({ message: 'Пользователь не найден' });
     }
     return res.send(user);
-  } catch {
+  } catch (err: any) {
+    if (err.name === 'CastError') {
+      return res.status(BAD_REQUEST)
+        .send({ message: 'Переданы некорректные данные' });
+    }
     return res.status(SERVER_ERROR)
       .send({ message: 'Произошла ошибка' });
   }
@@ -60,19 +64,32 @@ export const getUser = async (req: Request, res: Response) => {
 
 export const updateUser = async (req: CustomRequest, res: Response) => {
   const id = req.user?._id;
-  const { name, about } = req.body;
+  const {
+    name,
+    about,
+  } = req.body;
   try {
     if (!name || !about) {
       return res.status(BAD_REQUEST)
         .send({ message: 'Переданы некорректные данные' });
     }
-    const user = await User.findByIdAndUpdate(id, { name, about }, { new: true });
+    const user = await User.findByIdAndUpdate(id, {
+      name,
+      about,
+    }, {
+      new: true,
+      runValidators: true,
+    });
     if (!user) {
       return res.status(NOT_FOUND)
         .send({ message: 'Пользователь не найден' });
     }
     return res.send(user);
-  } catch {
+  } catch (err: any) {
+    if (err.name === 'ValidationError') {
+      return res.status(BAD_REQUEST)
+        .send({ message: 'Переданы некорректные данные' });
+    }
     return res.status(SERVER_ERROR)
       .send({ message: 'Произошла ошибка' });
   }
@@ -86,13 +103,20 @@ export const updateAvatar = async (req: CustomRequest, res: Response) => {
       return res.status(BAD_REQUEST)
         .send({ message: 'Переданы некорректные данные' });
     }
-    const user = await User.findByIdAndUpdate(id, { avatar }, { new: true });
+    const user = await User.findByIdAndUpdate(id, { avatar }, {
+      new: true,
+      runValidators: true,
+    });
     if (!user) {
       return res.status(NOT_FOUND)
         .send({ message: 'Пользователь не найден' });
     }
     return res.send(user);
-  } catch {
+  } catch (err: any) {
+    if (err.name === 'ValidationError') {
+      return res.status(BAD_REQUEST)
+        .send({ message: 'Переданы некорректные данные' });
+    }
     return res.status(SERVER_ERROR)
       .send({ message: 'Произошла ошибка' });
   }
