@@ -136,8 +136,8 @@ export const login = async (req: Request, res: Response) => {
     const user = await User.findUserByCredentials(email, password);
     const token = jwt.sign(
       { _id: user._id },
-      'some-secret-key',
-      { expiresIn: '7d' },
+      'super-strong-secret',
+      { expiresIn: '1d' },
     );
     return res.send({ token });
   } catch (err: any) {

@@ -12,6 +12,7 @@ interface IUser {
 
 interface UserModel extends mongoose.Model<IUser> {
   findUserByCredentials:
+  // eslint-disable-next-line no-unused-vars
     (email: string, password: string) => Promise<mongoose.Document<unknown, any, IUser>>;
 }
 
@@ -31,7 +32,6 @@ const userSchema = new mongoose.Schema<IUser, UserModel>({
   password: {
     type: String,
     required: true,
-    select: false,
   },
   about: {
     type: String,
