@@ -69,7 +69,7 @@ export const deleteCard = async (req: CustomRequest, res: Response) => {
         .send({ message: 'Нельзя удалять чужие карточки' });
     }
     const deletedCard = await Card.findByIdAndRemove(req.params.id);
-    return res.send({ message: `Карточка "${deletedCard?.name}" удалена` });
+    return res.send({ message: `Карточка ${deletedCard?.name} удалена` });
   } catch {
     return res.status(SERVER_ERROR)
       .send({ message: 'Произошла ошибка' });

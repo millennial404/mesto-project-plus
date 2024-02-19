@@ -81,6 +81,7 @@ export const updateUser = async (req: CustomRequest, res: Response) => {
       return res.status(BAD_REQUEST)
         .send({ message: 'Переданы некорректные данные' });
     }
+
     const user = await User.findByIdAndUpdate(id, {
       name,
       about,
@@ -143,5 +144,20 @@ export const login = async (req: Request, res: Response) => {
   } catch (err: any) {
     return res.status(UNAUTHORIZED)
       .send({ message: err.message });
+  }
+};
+
+export const getCurrentUser = async (req: CustomRequest, res: Response) => {
+  const id = req.user?._id;
+  try {
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(NOT_FOUND)
+        .send({ message: 'Пользователь не найден' });
+    }
+    return res.send(user);
+  } catch (err: any) {
+    return res.status(SERVER_ERROR)
+      .send({ message: 'Произошла ошибка' });
   }
 };

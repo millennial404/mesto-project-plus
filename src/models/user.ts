@@ -27,11 +27,15 @@ const userSchema = new mongoose.Schema<IUser, UserModel>({
     type: String,
     required: true,
     unique: true,
-    validate: [isEmail, 'Invalid email'],
+    validate: {
+      validator: (v: string) => isEmail(v),
+      message: 'Неправильный формат почты',
+    },
   },
   password: {
     type: String,
     required: true,
+    select: false,
   },
   about: {
     type: String,
@@ -45,7 +49,7 @@ const userSchema = new mongoose.Schema<IUser, UserModel>({
   },
 });
 userSchema.static('findUserByCredentials', async function findUserByCredentials(email: string, password: string) {
-  const user = await this.findOne({ email });
+  const user = await this.findOne({ email }).select('+password');
   if (!user) {
     return Promise.reject(new Error('Неправильные почта или пароль'));
   }

@@ -32,9 +32,11 @@
     "bcrypt": "^5.1.1",
     "express": "^4.18.1",
     "express-rate-limit": "^7.1.5",
+    "express-winston": "^4.2.0",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^6.12.6",
-    "validator": "^13.11.0"
+    "validator": "^13.11.0",
+    "winston": "^3.11.0"
   }
 }

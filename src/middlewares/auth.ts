@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
+import { UNAUTHORIZED } from '../controllers/const';
 
 interface SessionRequest extends Request {
   user?: string | JwtPayload;
@@ -7,7 +8,7 @@ interface SessionRequest extends Request {
 
 const handleAuthError = (res: Response) => {
   res
-    .status(401)
+    .status(UNAUTHORIZED)
     .send({ message: 'Необходима авторизация' });
 };
 
