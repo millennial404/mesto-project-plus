@@ -22,7 +22,7 @@ export default (req: SessionRequest, res: Response, next: NextFunction) => {
   try {
     payload = jwt.verify(token, 'super-strong-secret');
   } catch (err) {
-    return next(err);
+    return next(new UnauthorizedError('Необходима авторизация'));
   }
 
   req.user = payload;
