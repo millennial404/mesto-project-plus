@@ -1,16 +1,17 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import User from '../models/user';
 import {
-  BAD_REQUEST, NOT_FOUND, SERVER_ERROR, UNAUTHORIZED,
+  BAD_REQUEST,
 } from './const';
+import { ConflictError, NotFoundError, UnauthorizedError } from '../middlewares/errors';
 
 export interface CustomRequest extends Request {
   user?: { _id: string };
 }
 
-export const createUser = async (req: Request, res: Response) => {
+export const createUser = async (req: Request, res: Response, next: NextFunction) => {
   const hash = await bcrypt.hash(req.body.password, 10);
   const {
     name,
@@ -19,10 +20,6 @@ export const createUser = async (req: Request, res: Response) => {
     avatar,
   } = req.body;
   try {
-    if (!email || !hash) {
-      return res.status(BAD_REQUEST)
-        .send({ message: 'Переданы некорректные данные' });
-    }
     const user = await User.create({
       name,
       email,
@@ -32,32 +29,33 @@ export const createUser = async (req: Request, res: Response) => {
     });
     return res.send(user);
   } catch (err: any) {
+    if (err.code === 11000) {
+      const conflictError = new ConflictError();
+      return next(conflictError);
+    }
     if (err.name === 'ValidationError') {
       return res.status(BAD_REQUEST)
         .send({ message: 'Переданы некорректные данные' });
     }
-    return res.status(SERVER_ERROR)
-      .send({ message: 'Произошла ошибка' });
+    return next(err);
   }
 };
 
-export const getUsers = async (req: Request, res: Response) => {
+export const getUsers = async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const users = await User.find({});
     return res.send(users);
-  } catch {
-    return res.status(SERVER_ERROR)
-      .send({ message: 'Произошла ошибка' });
+  } catch (err: any) {
+    return next(err);
   }
 };
 
-export const getUser = async (req: Request, res: Response) => {
+export const getUser = async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
   try {
     const user = await User.findById(id);
     if (!user) {
-      return res.status(NOT_FOUND)
-        .send({ message: 'Пользователь не найден' });
+      throw new NotFoundError('Пользователь не найден');
     }
     return res.send(user);
   } catch (err: any) {
@@ -65,12 +63,11 @@ export const getUser = async (req: Request, res: Response) => {
       return res.status(BAD_REQUEST)
         .send({ message: 'Переданы некорректные данные' });
     }
-    return res.status(SERVER_ERROR)
-      .send({ message: 'Произошла ошибка' });
+    return next(err);
   }
 };
 
-export const updateUser = async (req: CustomRequest, res: Response) => {
+export const updateUser = async (req: CustomRequest, res: Response, next: NextFunction) => {
   const id = req.user?._id;
   const {
     name,
@@ -90,8 +87,7 @@ export const updateUser = async (req: CustomRequest, res: Response) => {
       runValidators: true,
     });
     if (!user) {
-      return res.status(NOT_FOUND)
-        .send({ message: 'Пользователь не найден' });
+      throw new NotFoundError('Пользователь не найден');
     }
     return res.send(user);
   } catch (err: any) {
@@ -99,12 +95,11 @@ export const updateUser = async (req: CustomRequest, res: Response) => {
       return res.status(BAD_REQUEST)
         .send({ message: 'Переданы некорректные данные' });
     }
-    return res.status(SERVER_ERROR)
-      .send({ message: 'Произошла ошибка' });
+    return next(err);
   }
 };
 
-export const updateAvatar = async (req: CustomRequest, res: Response) => {
+export const updateAvatar = async (req: CustomRequest, res: Response, next: NextFunction) => {
   const id = req.user?._id;
   const { avatar } = req.body;
   try {
@@ -117,8 +112,7 @@ export const updateAvatar = async (req: CustomRequest, res: Response) => {
       runValidators: true,
     });
     if (!user) {
-      return res.status(NOT_FOUND)
-        .send({ message: 'Пользователь не найден' });
+      throw new NotFoundError('Пользователь не найден');
     }
     return res.send(user);
   } catch (err: any) {
@@ -126,15 +120,20 @@ export const updateAvatar = async (req: CustomRequest, res: Response) => {
       return res.status(BAD_REQUEST)
         .send({ message: 'Переданы некорректные данные' });
     }
-    return res.status(SERVER_ERROR)
-      .send({ message: 'Произошла ошибка' });
+    return next(err);
   }
 };
 
-export const login = async (req: Request, res: Response) => {
-  const { email, password } = req.body;
+export const login = async (req: Request, res: Response, next: NextFunction) => {
+  const {
+    email,
+    password,
+  } = req.body;
   try {
     const user = await User.findUserByCredentials(email, password);
+    if (!user) {
+      throw new UnauthorizedError();
+    }
     const token = jwt.sign(
       { _id: user._id },
       'super-strong-secret',
@@ -142,22 +141,19 @@ export const login = async (req: Request, res: Response) => {
     );
     return res.send({ token });
   } catch (err: any) {
-    return res.status(UNAUTHORIZED)
-      .send({ message: err.message });
+    return next(err);
   }
 };
 
-export const getCurrentUser = async (req: CustomRequest, res: Response) => {
+export const getCurrentUser = async (req: CustomRequest, res: Response, next: NextFunction) => {
   const id = req.user?._id;
   try {
     const user = await User.findById(id);
     if (!user) {
-      return res.status(NOT_FOUND)
-        .send({ message: 'Пользователь не найден' });
+      throw new NotFoundError('Пользователь не найден');
     }
     return res.send(user);
   } catch (err: any) {
-    return res.status(SERVER_ERROR)
-      .send({ message: 'Произошла ошибка' });
+    return next(err);
   }
 };

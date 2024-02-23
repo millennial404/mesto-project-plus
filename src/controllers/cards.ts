@@ -1,46 +1,43 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import Card from '../models/card';
 import {
-  BAD_REQUEST, FORBIDDEN, NOT_FOUND, SERVER_ERROR, UNAUTHORIZED,
+  BAD_REQUEST,
 } from './const';
+import { ForbiddenError, NotFoundError, UnauthorizedError } from '../middlewares/errors';
 
 export interface CustomRequest extends Request {
-  user?: {_id: string};
+  user?: { _id: string };
 }
 
-export const getCards = async (req: Request, res: Response) => {
+export const getCards = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const cards = await Card.find();
     return res.send(cards);
-  } catch {
-    return res.status(SERVER_ERROR)
-      .send({ message: 'Произошла ошибка' });
+  } catch (err: any) {
+    return next(err);
   }
 };
 
-export const getCard = async (req: Request, res: Response) => {
+export const getCard = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const card = await Card.findById(req.params.id);
     if (!card) {
-      return res.status(NOT_FOUND)
-        .send({ message: 'Карточка не найдена' });
+      throw new NotFoundError('Карточка не найдена');
     }
     return res.send(card);
-  } catch {
-    return res.status(SERVER_ERROR)
-      .send({ message: 'Произошла ошибка' });
+  } catch (err: any) {
+    return next(err);
   }
 };
 
-export const createCard = async (req: CustomRequest, res: Response) => {
+export const createCard = async (req: CustomRequest, res: Response, next: NextFunction) => {
   try {
     if (!req.body.name || !req.body.link) {
       return res.status(BAD_REQUEST)
         .send({ message: 'Недостаточно данных для создания карточки' });
     }
     if (!req.user) {
-      return res.status(UNAUTHORIZED)
-        .send({ message: 'Необходима авторизация' });
+      throw new UnauthorizedError('Пользователь не авторизован');
     }
     const card = await Card.create({
       name: req.body.name,
@@ -50,33 +47,30 @@ export const createCard = async (req: CustomRequest, res: Response) => {
     return res.send(card);
   } catch (err: any) {
     if (err.name === 'ValidationError') {
-      return res.status(BAD_REQUEST).send({ message: 'Ошибка валидации данных' });
+      return res.status(BAD_REQUEST)
+        .send({ message: 'Ошибка валидации данных' });
     }
-    return res.status(SERVER_ERROR)
-      .send({ message: 'Произошла ошибка' });
+    return next(err);
   }
 };
 
-export const deleteCard = async (req: CustomRequest, res: Response) => {
+export const deleteCard = async (req: CustomRequest, res: Response, next: NextFunction) => {
   try {
     const card = await Card.findById(req.params.id);
     if (!card) {
-      return res.status(NOT_FOUND)
-        .send({ message: 'Карточка не найдена' });
+      throw new NotFoundError('Карточка не найдена');
     }
     if (card.owner.toString() !== req.user?._id) {
-      return res.status(FORBIDDEN)
-        .send({ message: 'Нельзя удалять чужие карточки' });
+      throw new ForbiddenError();
     }
     const deletedCard = await Card.findByIdAndRemove(req.params.id);
     return res.send({ message: `Карточка ${deletedCard?.name} удалена` });
-  } catch {
-    return res.status(SERVER_ERROR)
-      .send({ message: 'Произошла ошибка' });
+  } catch (err: any) {
+    return next(err);
   }
 };
 
-export const likeCard = async (req: CustomRequest, res: Response) => {
+export const likeCard = async (req: CustomRequest, res: Response, next: NextFunction) => {
   try {
     const card = await Card.findByIdAndUpdate(
       req.params.cardId,
@@ -84,8 +78,7 @@ export const likeCard = async (req: CustomRequest, res: Response) => {
       { new: true },
     );
     if (!card) {
-      return res.status(NOT_FOUND)
-        .send({ message: 'Карточка не найдена' });
+      throw new NotFoundError('Карточка не найдена');
     }
     return res.send(card);
   } catch (err: any) {
@@ -93,12 +86,11 @@ export const likeCard = async (req: CustomRequest, res: Response) => {
       return res.status(BAD_REQUEST)
         .send({ message: 'Переданы некорректные данные' });
     }
-    return res.status(SERVER_ERROR)
-      .send({ message: 'Произошла ошибка' });
+    return next(err);
   }
 };
 
-export const dislikeCard = async (req: CustomRequest, res: Response) => {
+export const dislikeCard = async (req: CustomRequest, res: Response, next: NextFunction) => {
   try {
     const card = await Card.findByIdAndUpdate(
       req.params.cardId,
@@ -106,8 +98,7 @@ export const dislikeCard = async (req: CustomRequest, res: Response) => {
       { new: true },
     );
     if (!card) {
-      return res.status(NOT_FOUND)
-        .send({ message: 'Карточка не найдена' });
+      throw new NotFoundError('Карточка не найдена');
     }
     return res.send(card);
   } catch (err: any) {
@@ -115,7 +106,6 @@ export const dislikeCard = async (req: CustomRequest, res: Response) => {
       return res.status(BAD_REQUEST)
         .send({ message: 'Переданы некорректные данные' });
     }
-    return res.status(SERVER_ERROR)
-      .send({ message: 'Произошла ошибка' });
+    return next(err);
   }
 };

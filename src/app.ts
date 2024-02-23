@@ -2,11 +2,13 @@ import express, { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { rateLimit } from 'express-rate-limit';
 import helmet from 'helmet';
+import { celebrate, errors, Joi } from 'celebrate';
 import usersRouter from './routes/users';
 import cardRouter from './routes/cards';
 import { login, createUser } from './controllers/users';
 import auth from './middlewares/auth';
 import { requestLogger, errorLogger } from './middlewares/logger';
+import { errorHandler } from './middlewares/errorHandler';
 
 export interface CustomRequest extends Request {
   user?: { _id: string };
@@ -31,8 +33,30 @@ mongoose.connect('mongodb://localhost:27017/mestodb');
 
 app.use(requestLogger);
 
-app.post('/signin', login);
-app.post('/signup', createUser);
+app.post('/signin', celebrate({
+  body: Joi.object()
+    .keys({
+      email: Joi.string()
+        .required()
+        .email(),
+      password: Joi.string()
+        .required(),
+    }),
+}), login);
+
+app.post('/signup', celebrate({
+  body: Joi.object()
+    .keys({
+      email: Joi.string()
+        .required()
+        .email(),
+      password: Joi.string()
+        .required(),
+      name: Joi.string(),
+      about: Joi.string(),
+      avatar: Joi.string(),
+    }),
+}), createUser);
 
 app.use(auth);
 app.use('/users', usersRouter);
@@ -44,5 +68,7 @@ app.use((req: Request, res: Response) => {
   res.status(404)
     .json({ message: 'Not Found' });
 });
+app.use(errors());
+app.use(errorHandler);
 
 app.listen(PORT);

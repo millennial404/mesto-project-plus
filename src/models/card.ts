@@ -18,6 +18,10 @@ const cardSchema = new Schema<ICard>({
   link: {
     type: String,
     required: true,
+    validate: {
+      validator: (value: string) => /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w.-]*)*\/?$/.test(value),
+      message: (props) => `${props.value} is not a valid link!`,
+    },
   },
   owner: {
     type: Schema.Types.ObjectId,

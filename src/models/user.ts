@@ -46,6 +46,10 @@ const userSchema = new mongoose.Schema<IUser, UserModel>({
   avatar: {
     type: String,
     default: 'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
+    validate: {
+      validator: (value: string) => /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w.-]*)*\/?$/.test(value),
+      message: (props) => `${props.value} is not a valid link!`,
+    },
   },
 });
 userSchema.static('findUserByCredentials', async function findUserByCredentials(email: string, password: string) {
