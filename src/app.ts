@@ -1,14 +1,16 @@
-import express, { Request, Response } from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { rateLimit } from 'express-rate-limit';
 import helmet from 'helmet';
-import { celebrate, errors, Joi } from 'celebrate';
+import { errors } from 'celebrate';
 import usersRouter from './routes/users';
 import cardRouter from './routes/cards';
 import { login, createUser } from './controllers/users';
 import auth from './middlewares/auth';
 import { requestLogger, errorLogger } from './middlewares/logger';
 import { errorHandler } from './middlewares/errorHandler';
+import { NotFoundError } from './middlewares/errors';
+import { validateCreateUser, validateLogin } from './middlewares/validation';
 
 export interface CustomRequest extends Request {
   user?: { _id: string };
@@ -33,40 +35,19 @@ mongoose.connect('mongodb://localhost:27017/mestodb');
 
 app.use(requestLogger);
 
-app.post('/signin', celebrate({
-  body: Joi.object()
-    .keys({
-      email: Joi.string()
-        .required()
-        .email(),
-      password: Joi.string()
-        .required(),
-    }),
-}), login);
+app.post('/signin', validateLogin('email', 'password'), login);
 
-app.post('/signup', celebrate({
-  body: Joi.object()
-    .keys({
-      email: Joi.string()
-        .required()
-        .email(),
-      password: Joi.string()
-        .required(),
-      name: Joi.string(),
-      about: Joi.string(),
-      avatar: Joi.string(),
-    }),
-}), createUser);
+app.post('/signup', validateCreateUser('email', 'password', 'name', 'about', 'avatar'), createUser);
 
 app.use(auth);
+
 app.use('/users', usersRouter);
 app.use('/cards', cardRouter);
 
 app.use(errorLogger);
 
-app.use((req: Request, res: Response) => {
-  res.status(404)
-    .json({ message: 'Not Found' });
+app.use('*', (req: Request, res: Response, next: NextFunction) => {
+  next(new NotFoundError('Маршрут не найден'));
 });
 app.use(errors());
 app.use(errorHandler);

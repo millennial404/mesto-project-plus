@@ -8,6 +8,12 @@ export class CustomError extends Error {
   }
 }
 
+export class BadRequestError extends CustomError {
+  constructor(message: string = 'Переданы некорректные данные') {
+    super(message, 400);
+  }
+}
+
 export class NotFoundError extends CustomError {
   constructor(message: string = 'Ресурс не найден') {
     super(message, 404);

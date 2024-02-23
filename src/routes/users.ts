@@ -1,25 +1,14 @@
 import { Router } from 'express';
-import { celebrate, Joi } from 'celebrate';
 import {
   getUsers, getUser, updateUser, updateAvatar, getCurrentUser,
 } from '../controllers/users';
+import { validateId, validateUpdateAvatar, validateUpdateUser } from '../middlewares/validation';
 
 const router = Router();
 router.get('/me', getCurrentUser);
 router.get('/', getUsers);
-router.get('/:id', getUser);
-router.patch('/me', celebrate({
-  body: Joi.object()
-    .keys({
-      name: Joi.string(),
-      about: Joi.string(),
-    }),
-}), updateUser);
-router.patch('/me/avatar', celebrate({
-  body: Joi.object()
-    .keys({
-      avatar: Joi.string(),
-    }),
-}), updateAvatar);
+router.get('/:id', validateId('id'), getUser);
+router.patch('/me', validateUpdateUser('name', 'about'), updateUser);
+router.patch('/me/avatar', validateUpdateAvatar('avatar'), updateAvatar);
 
 export default router;

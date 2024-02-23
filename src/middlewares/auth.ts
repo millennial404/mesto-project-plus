@@ -1,16 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
-import { UNAUTHORIZED } from '../controllers/const';
+import { UnauthorizedError } from './errors';
 
 interface SessionRequest extends Request {
   user?: string | JwtPayload;
 }
-
-const handleAuthError = (res: Response) => {
-  res
-    .status(UNAUTHORIZED)
-    .send({ message: 'Необходима авторизация' });
-};
 
 const extractBearerToken = (header: string) => header.replace('Bearer ', '');
 
@@ -19,7 +13,7 @@ export default (req: SessionRequest, res: Response, next: NextFunction) => {
   const { authorization } = req.headers;
 
   if (!authorization || !authorization.startsWith('Bearer ')) {
-    return handleAuthError(res);
+    throw new UnauthorizedError('Необходима авторизация');
   }
 
   const token = extractBearerToken(authorization);
@@ -28,10 +22,10 @@ export default (req: SessionRequest, res: Response, next: NextFunction) => {
   try {
     payload = jwt.verify(token, 'super-strong-secret');
   } catch (err) {
-    return handleAuthError(res);
+    return next(err);
   }
 
-  req.user = payload; // записываем пейлоуд в объект запроса
+  req.user = payload;
 
-  next(); // пропускаем запрос дальше
+  next();
 };

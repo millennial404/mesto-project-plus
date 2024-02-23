@@ -1,27 +1,16 @@
 import { Router } from 'express';
-import { celebrate, Joi } from 'celebrate';
 import {
   getCards, getCard, createCard, deleteCard, likeCard, dislikeCard,
 } from '../controllers/cards';
+import { validateCreateCard, validateId } from '../middlewares/validation';
 
 const router = Router();
 
 router.get('/', getCards);
-router.get('/:id', getCard);
-router.post('/', celebrate({
-  body: Joi.object()
-    .keys({
-      name: Joi.string()
-        .required()
-        .min(2)
-        .max(30),
-      link: Joi.string()
-        .required()
-        .uri(),
-    }),
-}), createCard);
-router.delete('/:id', deleteCard);
-router.put('/:cardId/likes', likeCard);
-router.delete('/:cardId/likes', dislikeCard);
+router.get('/:id', validateId('id'), getCard);
+router.post('/', validateCreateCard('name', 'link'), createCard);
+router.delete('/:id', validateId('id'), deleteCard);
+router.put('/:cardId/likes', validateId('cardId'), likeCard);
+router.delete('/:cardId/likes', validateId('cardId'), dislikeCard);
 
 export default router;

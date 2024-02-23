@@ -1,9 +1,14 @@
 import { NextFunction, Request, Response } from 'express';
 import Card from '../models/card';
 import {
-  BAD_REQUEST,
-} from './const';
-import { ForbiddenError, NotFoundError, UnauthorizedError } from '../middlewares/errors';
+  CREATED,
+} from '../utils/const';
+import {
+  BadRequestError,
+  ForbiddenError,
+  NotFoundError,
+  UnauthorizedError,
+} from '../middlewares/errors';
 
 export interface CustomRequest extends Request {
   user?: { _id: string };
@@ -33,8 +38,7 @@ export const getCard = async (req: Request, res: Response, next: NextFunction) =
 export const createCard = async (req: CustomRequest, res: Response, next: NextFunction) => {
   try {
     if (!req.body.name || !req.body.link) {
-      return res.status(BAD_REQUEST)
-        .send({ message: 'Недостаточно данных для создания карточки' });
+      throw new BadRequestError('Недостаточно данных для создания карточки');
     }
     if (!req.user) {
       throw new UnauthorizedError('Пользователь не авторизован');
@@ -44,11 +48,12 @@ export const createCard = async (req: CustomRequest, res: Response, next: NextFu
       link: req.body.link,
       owner: req.user?._id,
     });
-    return res.send(card);
+    return res.status(CREATED)
+      .send(card);
   } catch (err: any) {
     if (err.name === 'ValidationError') {
-      return res.status(BAD_REQUEST)
-        .send({ message: 'Ошибка валидации данных' });
+      const badRequestError = new BadRequestError('Ошибка валидации');
+      return next(badRequestError);
     }
     return next(err);
   }
@@ -83,8 +88,8 @@ export const likeCard = async (req: CustomRequest, res: Response, next: NextFunc
     return res.send(card);
   } catch (err: any) {
     if (err.name === 'CastError') {
-      return res.status(BAD_REQUEST)
-        .send({ message: 'Переданы некорректные данные' });
+      const badRequestError = new BadRequestError();
+      return next(badRequestError);
     }
     return next(err);
   }
@@ -103,8 +108,8 @@ export const dislikeCard = async (req: CustomRequest, res: Response, next: NextF
     return res.send(card);
   } catch (err: any) {
     if (err.name === 'CastError') {
-      return res.status(BAD_REQUEST)
-        .send({ message: 'Переданы некорректные данные' });
+      const badRequestError = new BadRequestError();
+      return next(badRequestError);
     }
     return next(err);
   }

@@ -3,9 +3,14 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import User from '../models/user';
 import {
-  BAD_REQUEST,
-} from './const';
-import { ConflictError, NotFoundError, UnauthorizedError } from '../middlewares/errors';
+  CREATED,
+} from '../utils/const';
+import {
+  BadRequestError,
+  ConflictError,
+  NotFoundError,
+  UnauthorizedError,
+} from '../middlewares/errors';
 
 export interface CustomRequest extends Request {
   user?: { _id: string };
@@ -27,15 +32,23 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
       about,
       avatar,
     });
-    return res.send(user);
+    const userResponse = {
+      name: user.name,
+      about: user.about,
+      avatar: user.avatar,
+      email: user.email,
+      _id: user._id,
+    };
+    return res.status(CREATED)
+      .send(userResponse);
   } catch (err: any) {
     if (err.code === 11000) {
       const conflictError = new ConflictError();
       return next(conflictError);
     }
     if (err.name === 'ValidationError') {
-      return res.status(BAD_REQUEST)
-        .send({ message: 'Переданы некорректные данные' });
+      const badRequestError = new BadRequestError();
+      return next(badRequestError);
     }
     return next(err);
   }
@@ -60,8 +73,8 @@ export const getUser = async (req: Request, res: Response, next: NextFunction) =
     return res.send(user);
   } catch (err: any) {
     if (err.name === 'CastError') {
-      return res.status(BAD_REQUEST)
-        .send({ message: 'Переданы некорректные данные' });
+      const badRequestError = new BadRequestError();
+      return next(badRequestError);
     }
     return next(err);
   }
@@ -75,8 +88,7 @@ export const updateUser = async (req: CustomRequest, res: Response, next: NextFu
   } = req.body;
   try {
     if (!name || !about) {
-      return res.status(BAD_REQUEST)
-        .send({ message: 'Переданы некорректные данные' });
+      throw new BadRequestError();
     }
 
     const user = await User.findByIdAndUpdate(id, {
@@ -92,9 +104,10 @@ export const updateUser = async (req: CustomRequest, res: Response, next: NextFu
     return res.send(user);
   } catch (err: any) {
     if (err.name === 'ValidationError') {
-      return res.status(BAD_REQUEST)
-        .send({ message: 'Переданы некорректные данные' });
+      const badRequestError = new BadRequestError();
+      return next(badRequestError);
     }
+
     return next(err);
   }
 };
@@ -104,8 +117,7 @@ export const updateAvatar = async (req: CustomRequest, res: Response, next: Next
   const { avatar } = req.body;
   try {
     if (!avatar) {
-      return res.status(BAD_REQUEST)
-        .send({ message: 'Переданы некорректные данные' });
+      throw new BadRequestError();
     }
     const user = await User.findByIdAndUpdate(id, { avatar }, {
       new: true,
@@ -117,8 +129,8 @@ export const updateAvatar = async (req: CustomRequest, res: Response, next: Next
     return res.send(user);
   } catch (err: any) {
     if (err.name === 'ValidationError') {
-      return res.status(BAD_REQUEST)
-        .send({ message: 'Переданы некорректные данные' });
+      const badRequestError = new BadRequestError();
+      return next(badRequestError);
     }
     return next(err);
   }
